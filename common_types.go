@@ -71,6 +71,20 @@ func (q *BasicQueryParams) Params() map[string]string {
 	}
 }
 
+// MemberQueryParams for filtering members by unique_email_id
+type MemberQueryParams struct {
+	ExtendedQueryParams
+	UniqueEmailId string
+}
+
+func (q *MemberQueryParams) Params() map[string]string {
+	m := q.ExtendedQueryParams.Params()
+	if q.UniqueEmailId != "" {
+		m["unique_email_id"] = q.UniqueEmailId
+	}
+	return m
+}
+
 type withLinks struct {
 	Link []Link `json:"_link"`
 }

@@ -341,6 +341,7 @@ type Order struct {
 	// Optional
 	TaxTotal           float64   `json:"tax_total,omitempty"`
 	ShippingTotal      float64   `json:"shipping_total,omitempty"`
+	DiscountTotal      float64   `json:"discount_total,omitempty"`
 	TrackingCode       string    `json:"tracking_code,omitempty"`
 	ProcessedAtForeign time.Time `json:"processed_at_foreign"`
 	CancelledAtForeign time.Time `json:"cancelled_at_foreign"`
@@ -348,6 +349,7 @@ type Order struct {
 	CampaignID         string    `json:"campaign_id,omitempty"`
 	FinancialStatus    string    `json:"financial_status,omitempty"`
 	FulfillmentStatus  string    `json:"fulfillment_status,omitempty"`
+	CheckoutURL        string    `json:"checkout_url,omitempty"`
 
 	BillingAddress  *Address `json:"billing_address,omitempty"`
 	ShippingAddress *Address `json:"shipping_address,omitempty"`

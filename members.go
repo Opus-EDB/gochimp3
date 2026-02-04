@@ -234,6 +234,32 @@ func (list *ListResponse) DeleteMemberPermanent(id string) (bool, error) {
 	return list.api.RequestOk("POST", endpoint)
 }
 
+// GetMemberByUniqueEmailId looks up a member by their unique_email_id (mc_eid)
+func (list *ListResponse) GetMemberByUniqueEmailId(uniqueEmailId string) (*Member, error) {
+	if err := list.CanMakeRequest(); err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf(members_path, list.ID)
+	params := &MemberQueryParams{
+		UniqueEmailId: uniqueEmailId,
+	}
+
+	response := new(ListOfMembers)
+	err := list.api.Request("GET", endpoint, params, nil, response)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Members) == 0 {
+		return nil, nil
+	}
+
+	member := &response.Members[0]
+	member.api = list.api
+	return member, nil
+}
+
 // ------------------------------------------------------------------------------------------------
 // Activity
 // ------------------------------------------------------------------------------------------------
