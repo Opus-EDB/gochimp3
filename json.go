@@ -38,6 +38,7 @@ func (store *Store) UnmarshalJSON(data []byte) error {
 		*Alias
 		CreatedAt string `json:"created_at"`
 		UpdatedAt string `json:"updated_at"`
+		Status    any    `json:"status"`
 	}{
 		Alias: (*Alias)(store),
 	}
@@ -77,6 +78,7 @@ func (cart *Cart) UnmarshalJSON(data []byte) error {
 		*Alias
 		CreatedAt string `json:"created_at"`
 		UpdatedAt string `json:"updated_at"`
+		Status    any    `json:"status"`
 	}{
 		Alias: (*Alias)(cart),
 	}
@@ -119,6 +121,7 @@ func (order *Order) UnmarshalJSON(data []byte) error {
 		UpdatedAtForeign   string `json:"updated_at_foreign"`
 		CreatedAt          string `json:"created_at"`
 		UpdatedAt          string `json:"updated_at"`
+		Status             any    `json:"status"`
 	}{
 		Alias: (*Alias)(order),
 	}
@@ -178,6 +181,7 @@ func (product *Product) UnmarshalJSON(data []byte) error {
 	tmp := &struct {
 		*Alias
 		PublishedAtForeign string `json:"published_at_foreign"`
+		Status             any    `json:"status"`
 	}{
 		Alias: (*Alias)(product),
 	}
