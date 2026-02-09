@@ -124,7 +124,7 @@ type Customer struct {
 
 	// Optional
 	EmailAddress string   `json:"email_address,omitempty"`
-	OptInStatus  bool     `json:"opt_in_status,omitempty"`
+	OptInStatus  *bool    `json:"opt_in_status,omitempty"`
 	Company      string   `json:"company,omitempty"`
 	FirstName    string   `json:"first_name,omitempty"`
 	LastName     string   `json:"last_name,omitempty"`
