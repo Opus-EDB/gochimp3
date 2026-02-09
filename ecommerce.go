@@ -303,6 +303,17 @@ func (store *Store) UpdateCart(req *Cart) (*Cart, error) {
 	return res, store.api.Request("PATCH", endpoint, nil, req, res)
 }
 
+func (store *Store) PutCart(req *Cart) (*Cart, error) {
+	if err := store.HasID(); err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf(cart_path, store.ID, req.ID)
+	res := new(Cart)
+
+	return res, store.api.Request("PUT", endpoint, nil, req, res)
+}
+
 func (store *Store) DeleteCart(id string) (bool, error) {
 	if err := validID(id); err != nil {
 		return false, err
@@ -415,6 +426,17 @@ func (store *Store) UpdateOrder(req *Order) (*Order, error) {
 	res := new(Order)
 
 	return res, store.api.Request("PATCH", endpoint, nil, req, res)
+}
+
+func (store *Store) PutOrder(req *Order) (*Order, error) {
+	if err := store.HasID(); err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf(order_path, store.ID, req.ID)
+	res := new(Order)
+
+	return res, store.api.Request("PUT", endpoint, nil, req, res)
 }
 
 func (store *Store) DeleteOrder(id string) (bool, error) {
@@ -535,6 +557,19 @@ func (store *Store) UpdateProduct(req *Product) (*Product, error) {
 	res.StoreID = store.ID
 
 	return res, store.api.Request("PATCH", endpoint, nil, req, res)
+}
+
+func (store *Store) PutProduct(req *Product) (*Product, error) {
+	if err := store.HasID(); err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf(product_path, store.ID, req.ID)
+	res := new(Product)
+	res.api = store.api
+	res.StoreID = store.ID
+
+	return res, store.api.Request("PUT", endpoint, nil, req, res)
 }
 
 func (store *Store) DeleteProduct(id string) (bool, error) {
