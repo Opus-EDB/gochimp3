@@ -132,17 +132,17 @@ func (order *Order) UnmarshalJSON(data []byte) error {
 
 	if tmp.ProcessedAtForeign != "" {
 		if t, err := time.Parse(timeFormat, tmp.ProcessedAtForeign); err == nil {
-			order.ProcessedAtForeign = t
+			order.ProcessedAtForeign = &t
 		}
 	}
 	if tmp.CancelledAtForeign != "" {
 		if t, err := time.Parse(timeFormat, tmp.CancelledAtForeign); err == nil {
-			order.CancelledAtForeign = t
+			order.CancelledAtForeign = &t
 		}
 	}
 	if tmp.UpdatedAtForeign != "" {
 		if t, err := time.Parse(timeFormat, tmp.UpdatedAtForeign); err == nil {
-			order.UpdatedAtForeign = t
+			order.UpdatedAtForeign = &t
 		}
 	}
 	if tmp.CreatedAt != "" {
@@ -163,15 +163,21 @@ func (order *Order) MarshalJSON() ([]byte, error) {
 	tmp := struct {
 		Order
 		CurrencyCode       string `json:"currency_code"`
-		ProcessedAtForeign string `json:"processed_at_foreign"`
-		CancelledAtForeign string `json:"cancelled_at_foreign"`
-		UpdatedAtForeign   string `json:"updated_at_foreign"`
+		ProcessedAtForeign string `json:"processed_at_foreign,omitempty"`
+		CancelledAtForeign string `json:"cancelled_at_foreign,omitempty"`
+		UpdatedAtForeign   string `json:"updated_at_foreign,omitempty"`
 	}{
-		Order:              *order,
-		CurrencyCode:       strings.ToUpper(order.CurrencyCode),
-		ProcessedAtForeign: order.ProcessedAtForeign.Format(timeFormat),
-		CancelledAtForeign: order.CancelledAtForeign.Format(timeFormat),
-		UpdatedAtForeign:   order.UpdatedAtForeign.Format(timeFormat),
+		Order:        *order,
+		CurrencyCode: strings.ToUpper(order.CurrencyCode),
+	}
+	if order.ProcessedAtForeign != nil {
+		tmp.ProcessedAtForeign = order.ProcessedAtForeign.Format(timeFormat)
+	}
+	if order.CancelledAtForeign != nil {
+		tmp.CancelledAtForeign = order.CancelledAtForeign.Format(timeFormat)
+	}
+	if order.UpdatedAtForeign != nil {
+		tmp.UpdatedAtForeign = order.UpdatedAtForeign.Format(timeFormat)
 	}
 	return json.Marshal(tmp)
 }
