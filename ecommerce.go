@@ -360,7 +360,7 @@ type Order struct {
 	CampaignID         string    `json:"campaign_id,omitempty"`
 	FinancialStatus    string    `json:"financial_status,omitempty"`
 	FulfillmentStatus  string    `json:"fulfillment_status,omitempty"`
-	CheckoutURL        string    `json:"checkout_url,omitempty"`
+	OrderURL           string    `json:"order_url,omitempty"`
 
 	BillingAddress  *Address `json:"billing_address,omitempty"`
 	ShippingAddress *Address `json:"shipping_address,omitempty"`
