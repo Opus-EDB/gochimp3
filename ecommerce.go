@@ -366,8 +366,8 @@ type Order struct {
 	ShippingAddress *Address `json:"shipping_address,omitempty"`
 
 	// Response only
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	Links     []Link    `json:"_links,omitempty"`
 }
 
