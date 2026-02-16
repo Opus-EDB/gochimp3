@@ -147,12 +147,12 @@ func (order *Order) UnmarshalJSON(data []byte) error {
 	}
 	if tmp.CreatedAt != "" {
 		if t, err := time.Parse(timeFormat, tmp.CreatedAt); err == nil {
-			order.CreatedAt = t
+			order.CreatedAt = &t
 		}
 	}
 	if tmp.UpdatedAt != "" {
 		if t, err := time.Parse(timeFormat, tmp.UpdatedAt); err == nil {
-			order.UpdatedAt = t
+			order.UpdatedAt = &t
 		}
 	}
 
