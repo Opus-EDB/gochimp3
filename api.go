@@ -3,10 +3,11 @@ package gochimp3
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -26,9 +27,10 @@ var DatacenterRegex = regexp.MustCompile("[^-]\\w+$")
 
 // API represents the origin of the API
 type API struct {
-	Key       string
-	Timeout   time.Duration
-	Transport http.RoundTripper
+	Key        string
+	Timeout    time.Duration
+	Transport  http.RoundTripper
+	MaxRetries int // maximum 429 retries; defaults to 3 if zero
 
 	User  string
 	Debug bool
@@ -62,79 +64,88 @@ func (api *API) Request(method, path string, params QueryParams, body, response 
 		log.Printf("Requesting %s: %s\n", method, requestURL)
 	}
 
-	var bodyBytes io.Reader
-	var err error
-	var data []byte
+	var bodyData []byte
 	if body != nil {
-		data, err = json.Marshal(body)
+		var err error
+		bodyData, err = json.Marshal(body)
 		if err != nil {
 			return err
 		}
-		bodyBytes = bytes.NewBuffer(data)
 		if api.Debug {
 			log.Printf("Adding body: %+v\n", body)
 		}
 	}
 
-	req, err := http.NewRequest(method, requestURL, bodyBytes)
-	if err != nil {
-		return err
+	maxRetries := api.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = 3
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(api.User, api.Key)
-
-	if params != nil && !reflect.ValueOf(params).IsNil() {
-		queryParams := req.URL.Query()
-		for k, v := range params.Params() {
-			if v != "" {
-				queryParams.Set(k, v)
-			}
-		}
-		req.URL.RawQuery = queryParams.Encode()
-		
-		if api.Debug {
-			log.Printf("Adding query params: %q\n", req.URL.Query())
-		}
-	}
-
-	if api.Debug {
-		dump, _ := httputil.DumpRequestOut(req, true)
-		log.Printf("%s", string(dump))
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if api.Debug {
-		dump, _ := httputil.DumpResponse(resp, true)
-		log.Printf("%s", string(dump))
-	}
-
-	data, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		// Do not unmarshall response is nil
-		if response == nil || reflect.ValueOf(response).IsNil() || len(data) == 0 {
-			return nil
+	for attempt := 0; ; attempt++ {
+		var bodyBytes io.Reader
+		if bodyData != nil {
+			bodyBytes = bytes.NewBuffer(bodyData)
 		}
 
-		err = json.Unmarshal(data, response)
+		req, err := http.NewRequest(method, requestURL, bodyBytes)
 		if err != nil {
 			return err
 		}
 
-		return nil
-	}
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth(api.User, api.Key)
 
-	// This is an API Error
-	return parseAPIError(data)
+		if params != nil && !reflect.ValueOf(params).IsNil() {
+			queryParams := req.URL.Query()
+			for k, v := range params.Params() {
+				if v != "" {
+					queryParams.Set(k, v)
+				}
+			}
+			req.URL.RawQuery = queryParams.Encode()
+
+			if api.Debug {
+				log.Printf("Adding query params: %q\n", req.URL.Query())
+			}
+		}
+
+		if api.Debug {
+			dump, _ := httputil.DumpRequestOut(req, true)
+			log.Printf("%s", string(dump))
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if api.Debug {
+			dump, _ := httputil.DumpResponse(resp, true)
+			log.Printf("%s", string(dump))
+		}
+
+		data, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			// Do not unmarshall response is nil
+			if response == nil || reflect.ValueOf(response).IsNil() || len(data) == 0 {
+				return nil
+			}
+			return json.Unmarshal(data, response)
+		}
+
+		apiErr := parseAPIError(data)
+		var mcErr *APIError
+		if errors.As(apiErr, &mcErr) && mcErr.Status == http.StatusTooManyRequests && attempt < maxRetries {
+			base := min(time.Duration(500*(1<<attempt))*time.Millisecond, 16*time.Second)
+			time.Sleep(time.Duration(rand.Int64N(int64(base) + 1)))
+			continue
+		}
+		return apiErr
+	}
 }
 
 // RequestOk Make Request ignoring body and return true if HTTP status code is 2xx.
