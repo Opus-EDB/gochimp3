@@ -83,6 +83,10 @@ type ListResponse struct {
 	api *API
 }
 
+func (api *API) NewList(id string) *ListResponse {
+	return &ListResponse{ID: id, api: api}
+}
+
 func (list *ListResponse) CanMakeRequest() error {
 	if list.ID == "" {
 		return errors.New("No ID provided on list")
