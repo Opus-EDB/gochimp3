@@ -157,7 +157,8 @@ func (api *API) RequestOk(method, path string) (bool, error) {
 func parseAPIError(statusCode int, data []byte) error {
 	apiError := new(APIError)
 	if err := json.Unmarshal(data, apiError); err != nil {
-		return fmt.Errorf("HTTP %d non-JSON error response: %s", statusCode, string(data))
+		log.Printf("HTTP %d non-JSON error response body: %s", statusCode, string(data))
+		return fmt.Errorf("HTTP %d non-JSON error response (see logs)", statusCode)
 	}
 	return apiError
 }
