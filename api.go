@@ -3,7 +3,6 @@ package gochimp3
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
