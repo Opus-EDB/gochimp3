@@ -137,14 +137,12 @@ func (api *API) Request(method, path string, params QueryParams, body, response 
 			return json.Unmarshal(data, response)
 		}
 
-		apiErr := parseAPIError(data)
-		var mcErr *APIError
-		if errors.As(apiErr, &mcErr) && mcErr.Status == http.StatusTooManyRequests && attempt < maxRetries {
+		if resp.StatusCode == http.StatusTooManyRequests && attempt < maxRetries {
 			base := min(time.Duration(500*(1<<attempt))*time.Millisecond, 16*time.Second)
 			time.Sleep(time.Duration(rand.Int64N(int64(base) + 1)))
 			continue
 		}
-		return apiErr
+		return parseAPIError(resp.StatusCode, data)
 	}
 }
 
@@ -157,12 +155,10 @@ func (api *API) RequestOk(method, path string) (bool, error) {
 	return true, nil
 }
 
-func parseAPIError(data []byte) error {
+func parseAPIError(statusCode int, data []byte) error {
 	apiError := new(APIError)
-	err := json.Unmarshal(data, apiError)
-	if err != nil {
-		return err
+	if err := json.Unmarshal(data, apiError); err != nil {
+		return fmt.Errorf("HTTP %d non-JSON error response: %s", statusCode, string(data))
 	}
-
 	return apiError
 }
