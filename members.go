@@ -50,7 +50,7 @@ type MemberResponse struct {
 type MemberRequest struct {
 	EmailAddress         string                 `json:"email_address"`
 	EmailType            string                 `json:"email_type,omitempty"`
-	Status               string                 `json:"status"`
+	Status               string                 `json:"status,omitempty"`
 	StatusIfNew          string                 `json:"status_if_new,omitempty"`
 	MergeFields          map[string]interface{} `json:"merge_fields,omitempty"`
 	Interests            map[string]bool        `json:"interests,omitempty"`
