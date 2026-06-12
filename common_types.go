@@ -59,17 +59,19 @@ type BasicQueryParams struct {
 	SortDirection     string
 	Fields            []string
 	ExcludeFields     []string
-	SinceLastChanged  string // ISO 8601, e.g. "2026-06-11T00:00:00Z"
+	SinceLastChanged   string // ISO 8601, e.g. "2026-06-11T00:00:00Z"
+	SinceTimestampOpt  string // ISO 8601; filters by signup/confirmation date
 }
 
 func (q *BasicQueryParams) Params() map[string]string {
 	return map[string]string{
-		"status":               q.Status,
-		"sort_field":           q.SortField,
-		"sort_dir":             q.SortDirection,
-		"fields":               strings.Join(q.Fields, ","),
-		"exclude_fields":       strings.Join(q.ExcludeFields, ","),
-		"since_last_changed":   q.SinceLastChanged,
+		"status":                q.Status,
+		"sort_field":            q.SortField,
+		"sort_dir":              q.SortDirection,
+		"fields":                strings.Join(q.Fields, ","),
+		"exclude_fields":        strings.Join(q.ExcludeFields, ","),
+		"since_last_changed":    q.SinceLastChanged,
+		"since_timestamp_opt":   q.SinceTimestampOpt,
 	}
 }
 
