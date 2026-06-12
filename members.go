@@ -148,7 +148,7 @@ type MemberTag struct {
 	Name string `json:"name"`
 }
 
-func (list *ListResponse) GetMembers(params *InterestCategoriesQueryParams) (*ListOfMembers, error) {
+func (list *ListResponse) GetMembers(params *ExtendedQueryParams) (*ListOfMembers, error) {
 	if err := list.CanMakeRequest(); err != nil {
 		return nil, err
 	}
