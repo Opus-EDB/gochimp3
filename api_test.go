@@ -164,6 +164,49 @@ func TestGetWithNon200Response(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+// akamai503 is the edge's own error body, which is what a Mailchimp 503 usually
+// looks like: Akamai's JSON, carrying no "status" of its own.
+const akamai503 = `{"type":"akamai_error_message","title":"akamai_503","ref_no":"00.56ec1702.1787338140.be259d91"}`
+
+func TestRetries503OnIdempotentMethod(t *testing.T) {
+	calls := 0
+	delegate = func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			http.Error(w, akamai503, http.StatusServiceUnavailable)
+			return
+		}
+		fmt.Fprint(w, `{"one":"thing"}`)
+	}
+
+	api := testAPI()
+	actual := make(map[string]interface{})
+	err := api.Request("GET", "/somewhere", nil, nil, &actual)
+	fatalIf(t, err)
+
+	assert.Equal(t, 2, calls)
+	assert.EqualValues(t, map[string]interface{}{"one": "thing"}, actual)
+}
+
+func TestNoRetry503OnPost(t *testing.T) {
+	calls := 0
+	delegate = func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		http.Error(w, akamai503, http.StatusServiceUnavailable)
+	}
+
+	api := testAPI()
+	err := api.Request("POST", "/somewhere", nil, &struct{ A string }{"a"}, nil)
+
+	// Repeating a POST could apply it twice, so one attempt is all it gets.
+	assert.Equal(t, 1, calls)
+	apiErr, ok := err.(*APIError)
+	assert.True(t, ok)
+	// The body has no "status" of its own; the response's is used instead.
+	assert.Equal(t, http.StatusServiceUnavailable, apiErr.Status)
+	assert.Equal(t, "akamai_error_message", apiErr.Type)
+}
+
 func TestMissingEndpoint(t *testing.T) {
 	api := testAPI()
 	ok, err := api.RequestOk("GET", "/nowhere")

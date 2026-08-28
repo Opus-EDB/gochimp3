@@ -29,7 +29,7 @@ type API struct {
 	Key        string
 	Timeout    time.Duration
 	Transport  http.RoundTripper
-	MaxRetries int // maximum 429 retries; defaults to 3 if zero
+	MaxRetries int // maximum retries per retryableStatus; defaults to 3 if zero
 
 	User  string
 	Debug bool
@@ -136,13 +136,38 @@ func (api *API) Request(method, path string, params QueryParams, body, response 
 			return json.Unmarshal(data, response)
 		}
 
-		if resp.StatusCode == http.StatusTooManyRequests && attempt < maxRetries {
+		if retryableStatus(method, resp.StatusCode) && attempt < maxRetries {
 			base := min(time.Duration(500*(1<<attempt))*time.Millisecond, 16*time.Second)
 			time.Sleep(time.Duration(rand.Int64N(int64(base) + 1)))
 			continue
 		}
 		return parseAPIError(resp.StatusCode, data)
 	}
+}
+
+// retryableStatus reports whether a failed response is worth another attempt.
+//
+// 429 is retried whatever the method: Mailchimp rejected the call for rate, so
+// nothing was applied.
+//
+// 502/503/504 usually come from Akamai, which fronts the Mailchimp API, and are
+// returned at the edge before the request reaches Mailchimp at all -- the body
+// gives it away ("type":"akamai_error_message"). They are almost always brief.
+// But "usually" is not "always": a 5xx can also mean Mailchimp answered late on
+// a call it did apply, so only idempotent methods are retried. Repeating a POST
+// could create a second batch operation or a duplicate ecommerce record.
+func retryableStatus(method string, statusCode int) bool {
+	if statusCode == http.StatusTooManyRequests {
+		return true
+	}
+	switch statusCode {
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		switch method {
+		case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodDelete:
+			return true
+		}
+	}
+	return false
 }
 
 // RequestOk Make Request ignoring body and return true if HTTP status code is 2xx.
@@ -162,6 +187,13 @@ func parseAPIError(statusCode int, data []byte) error {
 			snippet = "..." + snippet[len(snippet)-1000:]
 		}
 		return fmt.Errorf("HTTP %d non-JSON response: %s", statusCode, snippet)
+	}
+	// Status carries the decoded body's own "status", which callers switch on to
+	// tell a 404 from a real failure. Not every error body sets it -- Akamai's
+	// edge errors are their own JSON, not Mailchimp's -- so fall back to the
+	// response's status rather than leave callers reading a zero.
+	if apiError.Status == 0 {
+		apiError.Status = statusCode
 	}
 	return apiError
 }
